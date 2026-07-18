@@ -48,7 +48,10 @@ function bindHome() {
     if (e) e.preventDefault();
     show("screen-home");
   };
-  const goPhoto = () => show("screen-upload");
+  const goPhoto = () => {
+    resetCheck();
+    show("screen-upload");
+  };
 
   $("#homeLink").addEventListener("click", goHome);
   ["#navStartBtn", "#startPhotoBtn", "#ctaStartBtn"].forEach((sel) =>
@@ -71,10 +74,9 @@ function bindHome() {
 
 // '사진 없이 직접 점검' — 사진 단계를 건너뛰고 항목을 직접 선택
 function startManual() {
+  resetCheck();
   state.verifyMode = "manual";
   state.manualEntry = true;
-  state.items = {};
-  state.reasons = {};
   renderVerify();
   show("screen-verify");
 }
@@ -549,13 +551,14 @@ async function copyLetter() {
   }
 }
 
-// ── 처음부터 ──────────────────────────────────────────────
-function restart() {
+// ── 점검 상태 초기화 (새 점검 시작·처음부터 공용) ──────────
+function resetCheck() {
   state.imageBase64 = null;
   state.mimeType = null;
   state.items = {};
   state.reasons = {};
   state.confirmed = [];
+  state.verifyMode = "ai";
   state.manualEntry = false;
   $("#fileInput").value = "";
   $("#previewWrap").classList.add("hidden");
@@ -564,7 +567,13 @@ function restart() {
   $("#analyzeBtn").disabled = true;
   $("#addressInput").value = "";
   $("#detailInput").value = "";
+  $("#letterResult").classList.add("hidden");
   $("#noLocationWarn").classList.add("hidden");
+}
+
+// ── 처음부터 ──────────────────────────────────────────────
+function restart() {
+  resetCheck();
   show("screen-upload");
 }
 
