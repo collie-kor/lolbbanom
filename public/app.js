@@ -8,19 +8,14 @@ const USER_ORDER = ["wheelchair", "stroller", "crutches"];
 const state = {
   rules: null,
   aiEnabled: false,
-  mapEnabled: false,
-  kakaoKey: "",
   imageBase64: null,
   mimeType: null,
   verifyMode: "ai", // 'ai' | 'manual'
+  manualEntry: false, // 홈에서 '사진 없이 직접 점검'으로 진입했는지
   items: {}, // obstacleId -> 'yes' | 'no' | 'maybe' | undefined
   reasons: {}, // obstacleId -> AI 관찰 문장
   confirmed: [], // 확인된 obstacleId 목록
   letter: null,
-  map: null, // Kakao 지도 인스턴스
-  marker: null, // 선택 마커
-  geocoder: null, // 좌표→주소 변환기
-  mapReady: false,
 };
 
 const $ = (sel) => document.querySelector(sel);
@@ -39,14 +34,37 @@ async function init() {
   try {
     const cfg = await fetch("/api/config").then((r) => r.json());
     state.aiEnabled = cfg.aiEnabled;
-    state.mapEnabled = cfg.mapEnabled;
-    state.kakaoKey = cfg.kakaoKey || "";
   } catch {
     state.aiEnabled = false;
-    state.mapEnabled = false;
   }
   bindUpload();
   bindNav();
+  bindHome();
+}
+
+// ── 홈(랜딩) 진입 ─────────────────────────────────────────
+function bindHome() {
+  const goHome = (e) => {
+    if (e) e.preventDefault();
+    show("screen-home");
+  };
+  const goPhoto = () => show("screen-upload");
+
+  $("#homeLink").addEventListener("click", goHome);
+  ["#navStartBtn", "#startPhotoBtn", "#ctaStartBtn"].forEach((sel) =>
+    $(sel).addEventListener("click", goPhoto)
+  );
+  $("#startManualBtn").addEventListener("click", startManual);
+}
+
+// '사진 없이 직접 점검' — 사진 단계를 건너뛰고 항목을 직접 선택
+function startManual() {
+  state.verifyMode = "manual";
+  state.manualEntry = true;
+  state.items = {};
+  state.reasons = {};
+  renderVerify();
+  show("screen-verify");
 }
 
 // ── 화면 전환 ─────────────────────────────────────────────
@@ -61,8 +79,13 @@ const SCREEN_STEP = {
 function show(id) {
   document.querySelectorAll(".screen").forEach((s) => s.classList.remove("active"));
   $("#" + id).classList.add("active");
-  updateSteps(SCREEN_STEP[id] || 1);
-  window.scrollTo({ top: 0, behavior: "smooth" });
+
+  const isHome = id === "screen-home";
+  $("#tool").classList.toggle("hidden", isHome);
+  $("#stepsNav").classList.toggle("hidden", isHome);
+  if (!isHome) updateSteps(SCREEN_STEP[id] || 1);
+
+  window.scrollTo({ top: 0, behavior: isHome ? "auto" : "smooth" });
 }
 function updateSteps(step) {
   document.querySelectorAll("#steps .step").forEach((s) => {
@@ -157,6 +180,7 @@ async function runAnalyze() {
 
   state.items = {};
   state.reasons = {};
+  state.manualEntry = false;
 
   if (!result.ok && result.fallback) {
     // 폴백: 체크박스로 직접 선택하는 경로
@@ -203,7 +227,9 @@ function renderVerify(topNote) {
       el(
         "div",
         "notice",
-        state.aiEnabled
+        state.manualEntry
+          ? "사진 없이 직접 점검하는 방식입니다. 해당하는 장애 요소를 선택해 주세요."
+          : state.aiEnabled
           ? "사진 분석을 사용할 수 없어, 장애 요소를 직접 선택하는 방식으로 전환했습니다."
           : "AI 사진 분석이 설정되지 않아, 장애 요소를 직접 선택하는 방식으로 진행합니다."
       )
@@ -271,7 +297,9 @@ function buildChoices(id, isUserCheck) {
 
 // ── 네비게이션 바인딩 ─────────────────────────────────────
 function bindNav() {
-  $("#verifyBackBtn").addEventListener("click", () => show("screen-upload"));
+  $("#verifyBackBtn").addEventListener("click", () =>
+    show(state.manualEntry ? "screen-home" : "screen-upload")
+  );
   $("#toCompareBtn").addEventListener("click", goToCompareOrNone);
 
   $("#noneBackBtn").addEventListener("click", () => show("screen-verify"));
@@ -424,97 +452,6 @@ function renderLetterSetup() {
   });
 
   $("#letterResult").classList.add("hidden");
-  setupLocation();
-}
-
-// ── 위치 지정 (Kakao Maps) ────────────────────────────────
-async function setupLocation() {
-  const mapArea = $("#mapArea");
-  const note = $("#addrFallbackNote");
-
-  if (!state.mapEnabled || !state.kakaoKey) {
-    // 지도 미설정 → 주소 직접 입력 경로
-    mapArea.classList.add("hidden");
-    note.classList.remove("hidden");
-    note.textContent = "지도가 설정되지 않아, 주소를 직접 입력하는 방식으로 진행합니다.";
-    return;
-  }
-
-  try {
-    await loadKakao(state.kakaoKey);
-    mapArea.classList.remove("hidden");
-    note.classList.add("hidden");
-    if (!state.mapReady) initMap();
-  } catch {
-    // 지도 SDK 로드 실패 → 폴백 (기획서 §12)
-    mapArea.classList.add("hidden");
-    note.classList.remove("hidden");
-    note.textContent = "지도를 불러오지 못했습니다. 주소를 직접 입력해 주세요.";
-  }
-}
-
-function loadKakao(key) {
-  return new Promise((resolve, reject) => {
-    if (window.kakao && window.kakao.maps && window.kakao.maps.services) {
-      resolve();
-      return;
-    }
-    const s = document.createElement("script");
-    s.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${key}&libraries=services&autoload=false`;
-    s.onload = () => window.kakao.maps.load(resolve);
-    s.onerror = reject;
-    document.head.appendChild(s);
-    setTimeout(() => reject(new Error("timeout")), 8000);
-  });
-}
-
-function initMap() {
-  const kakao = window.kakao;
-  const center = new kakao.maps.LatLng(37.5665, 126.978); // 기본값: 서울시청
-  state.map = new kakao.maps.Map($("#mapBox"), { center, level: 4 });
-  state.marker = new kakao.maps.Marker({ position: center, map: null });
-  state.geocoder = new kakao.maps.services.Geocoder();
-  state.mapReady = true;
-
-  // 지도 클릭 → 핀 이동 → 주소 변환
-  kakao.maps.event.addListener(state.map, "click", (e) => setPin(e.latLng));
-
-  // 현재 위치로
-  $("#locateBtn").addEventListener("click", useCurrentLocation);
-
-  // 초기 현재 위치 시도 (실패해도 무방)
-  useCurrentLocation(true);
-}
-
-function setPin(latLng) {
-  state.marker.setPosition(latLng);
-  state.marker.setMap(state.map);
-  state.map.panTo(latLng);
-  state.geocoder.coord2Address(latLng.getLng(), latLng.getLat(), (res, status) => {
-    if (status === window.kakao.maps.services.Status.OK && res[0]) {
-      const road = res[0].road_address?.address_name;
-      const jibun = res[0].address?.address_name;
-      $("#addressInput").value = road || jibun || "";
-    }
-  });
-}
-
-function useCurrentLocation(silent) {
-  if (!navigator.geolocation) return;
-  navigator.geolocation.getCurrentPosition(
-    (pos) => {
-      const ll = new window.kakao.maps.LatLng(pos.coords.latitude, pos.coords.longitude);
-      state.map.setCenter(ll);
-      setPin(ll);
-    },
-    () => {
-      if (!silent) {
-        const hint = document.querySelector(".map-hint");
-        if (hint) hint.textContent = "현재 위치를 가져올 수 없습니다. 지도를 눌러 직접 지정해 주세요.";
-      }
-    },
-    { enableHighAccuracy: true, timeout: 6000 }
-  );
 }
 
 async function generateLetter() {
@@ -607,6 +544,7 @@ function restart() {
   state.items = {};
   state.reasons = {};
   state.confirmed = [];
+  state.manualEntry = false;
   $("#fileInput").value = "";
   $("#previewWrap").classList.add("hidden");
   $("#dropZone").classList.remove("hidden");

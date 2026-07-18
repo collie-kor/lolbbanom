@@ -25,5 +25,4 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`먼저봄 서버 실행: http://localhost:${PORT}`);
   console.log(`AI 호출: ${process.env.GEMINI_API_KEY ? "활성" : "비활성 — 폴백 경로로 동작"}`);
-  console.log(`지도: ${process.env.KAKAO_JS_KEY ? "활성" : "비활성 — 주소 직접 입력 경로로 동작"}`);
 });
