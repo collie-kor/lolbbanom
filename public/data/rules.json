@@ -1,0 +1,231 @@
+{
+  "meta": {
+    "service": "먼저봄",
+    "version": "1.0",
+    "note": "이 파일은 이용자별 접근 비용 비교와 개선안 선정의 근거입니다. AI 호출 없이 계산됩니다."
+  },
+  "costTypes": {
+    "mobility": { "label": "이동", "desc": "공간을 통과하고 진입하는 데 드는 물리적 부담" },
+    "assistance": { "label": "도움", "desc": "혼자 해결하지 못해 다른 사람의 손이 필요한 부담" },
+    "information": { "label": "정보", "desc": "어디로 어떻게 가야 하는지 알기 어려운 부담" },
+    "participation": { "label": "참여", "desc": "진입을 포기하거나 활동에서 배제될 위험" }
+  },
+  "users": {
+    "wheelchair": { "label": "휠체어 이용자", "short": "휠체어" },
+    "stroller": { "label": "유모차 이용자", "short": "유모차" },
+    "crutches": { "label": "목발·보행 보조기 사용자", "short": "목발·보조기" }
+  },
+  "obstacles": {
+    "curb": { "label": "턱 또는 단차", "detection": "ai", "hint": "출입구·바닥의 높이 차이" },
+    "stairs_only": { "label": "계단만 있는 출입구", "detection": "ai", "hint": "경사로 없이 계단만 있는 진입로" },
+    "blocked_path": { "label": "좁거나 막힌 통로", "detection": "ai", "hint": "폭이 좁아 통과가 어려운 길" },
+    "obstruction": { "label": "통로 위 임시 적치물", "detection": "ai", "hint": "길에 놓인 물건·비품" },
+    "heavy_door": {
+      "label": "무거운 여닫이문",
+      "detection": "user",
+      "hint": "밀거나 당기는 힘이 많이 드는 문",
+      "userPrompt": "사진으로는 확인이 어려운 항목입니다. 직접 확인해 주세요 — 이 출입구의 문이 무겁게 여닫히나요?"
+    },
+    "no_signage": {
+      "label": "접근 가능 출입구 안내 부족",
+      "detection": "user",
+      "hint": "완만한 출입구가 어디인지 알려주는 안내",
+      "userPrompt": "사진으로는 확인이 어려운 항목입니다. 직접 확인해 주세요 — 접근 가능한 출입구를 알려주는 안내가 없나요?"
+    }
+  },
+  "matrix": {
+    "curb_wheelchair": {
+      "costs": ["mobility", "assistance", "participation"],
+      "display": "바퀴가 단차를 넘기 어려워 혼자 진입하지 못하거나 다른 사람의 도움이 필요할 수 있습니다.",
+      "phrase": "독립적 진입 불가 가능성",
+      "applicable": true
+    },
+    "curb_stroller": {
+      "costs": ["mobility", "assistance"],
+      "display": "유모차 앞바퀴가 단차에 걸려 앞부분을 들어 올려야 하고 동행자의 도움이 필요할 수 있습니다.",
+      "phrase": "들어 올림·동행 필요",
+      "applicable": true
+    },
+    "curb_crutches": {
+      "costs": ["mobility", "participation"],
+      "display": "발을 딛는 높이가 갑자기 달라져 균형을 잃을 위험이 있어 진입에 주의가 필요할 수 있습니다.",
+      "phrase": "균형 상실 위험",
+      "applicable": true
+    },
+    "stairs_only_wheelchair": {
+      "costs": ["mobility", "assistance", "participation"],
+      "display": "계단만 있는 출입구는 바퀴로 오를 수 없어 다른 경로가 없으면 진입 자체가 어려울 수 있습니다.",
+      "phrase": "진입 경로 부재 가능성",
+      "applicable": true
+    },
+    "stairs_only_stroller": {
+      "costs": ["mobility", "assistance"],
+      "display": "유모차를 계단 위로 들어 옮겨야 하며 혼자서는 어렵고 도움이 필요할 수 있습니다.",
+      "phrase": "들어 옮김·도움 필요",
+      "applicable": true
+    },
+    "stairs_only_crutches": {
+      "costs": ["mobility", "participation"],
+      "display": "계단을 오르내리는 동안 시간이 더 걸리고 균형을 잃을 위험이 있을 수 있습니다.",
+      "phrase": "이동 부담·낙상 위험",
+      "applicable": true
+    },
+    "blocked_path_wheelchair": {
+      "costs": ["mobility", "participation"],
+      "display": "휠체어 폭보다 통로가 좁으면 통과하지 못하고 돌아 나와야 할 수 있습니다.",
+      "phrase": "통과 폭 부족 가능성",
+      "applicable": true
+    },
+    "blocked_path_stroller": {
+      "costs": ["mobility"],
+      "display": "유모차 폭이 통로보다 넓으면 지나가기 어렵거나 유모차를 접어야 할 수 있습니다.",
+      "phrase": "통과 폭 부족",
+      "applicable": true
+    },
+    "blocked_path_crutches": {
+      "costs": ["mobility"],
+      "display": "목발이나 보행 보조기가 양옆에 닿아 지나갈 폭이 부족할 수 있습니다.",
+      "phrase": "이동 폭 부족",
+      "applicable": true
+    },
+    "obstruction_wheelchair": {
+      "costs": ["mobility", "participation"],
+      "display": "통로에 놓인 물건이 바퀴 진행을 막아 우회하거나 지나가지 못할 수 있습니다.",
+      "phrase": "진행 차단 가능성",
+      "applicable": true
+    },
+    "obstruction_stroller": {
+      "costs": ["mobility"],
+      "display": "적치물 때문에 유모차가 지나갈 폭이 줄어 통행이 어려울 수 있습니다.",
+      "phrase": "통행 폭 감소",
+      "applicable": true
+    },
+    "obstruction_crutches": {
+      "costs": ["mobility", "participation"],
+      "display": "바닥에 놓인 물건에 걸려 넘어질 위험이 있어 이동에 주의가 필요할 수 있습니다.",
+      "phrase": "걸림·낙상 위험",
+      "applicable": true
+    },
+    "heavy_door_wheelchair": {
+      "costs": ["mobility", "assistance"],
+      "display": "문을 당기면서 동시에 바퀴를 밀기 어려워 혼자 여닫기 힘들 수 있습니다.",
+      "phrase": "독립적 개폐 곤란",
+      "applicable": true
+    },
+    "heavy_door_stroller": {
+      "costs": ["assistance"],
+      "display": "한 손으로 유모차를 잡은 채 무거운 문을 여닫기 어려워 도움이 필요할 수 있습니다.",
+      "phrase": "개폐 시 도움 필요",
+      "applicable": true
+    },
+    "heavy_door_crutches": {
+      "costs": ["mobility", "assistance"],
+      "display": "목발을 짚은 상태로 무거운 문을 미는 동안 균형을 유지하기 어려울 수 있습니다.",
+      "phrase": "개폐 시 균형 부담",
+      "applicable": true
+    },
+    "no_signage_wheelchair": {
+      "costs": ["information", "participation"],
+      "display": "접근 가능한 출입구가 어디인지 안내가 없으면 먼 길을 돌거나 진입을 포기할 수 있습니다.",
+      "phrase": "접근 경로 정보 부재",
+      "applicable": true
+    },
+    "no_signage_stroller": {
+      "costs": ["information"],
+      "display": "완만한 출입 경로 안내가 없어 계단 앞에서 되돌아 나와야 할 수 있습니다.",
+      "phrase": "접근 경로 정보 부재",
+      "applicable": true
+    },
+    "no_signage_crutches": {
+      "costs": ["information"],
+      "display": "덜 힘든 출입 경로가 어디인지 알기 어려워 불필요하게 계단을 이용할 수 있습니다.",
+      "phrase": "접근 경로 정보 부재",
+      "applicable": true
+    }
+  },
+  "improvements": {
+    "curb": [
+      { "id": "curb_portable_ramp", "title": "이동식 경사판 비치", "detail": "단차 앞에 걸쳐 놓는 이동식 경사판을 두고 필요할 때 설치합니다.", "difficulty": 1, "timing": 1 },
+      { "id": "curb_threshold_ramp", "title": "문턱 경사판 고정 설치", "detail": "낮은 단차에 맞는 고정형 경사판을 부착합니다.", "difficulty": 2, "timing": 2 },
+      { "id": "curb_permanent_ramp", "title": "영구 경사로 시공", "detail": "단차 구간에 콘크리트·금속 경사로를 시공합니다.", "difficulty": 5, "timing": 5 }
+    ],
+    "stairs_only": [
+      { "id": "stairs_alt_entrance", "title": "대체 출입구 안내", "detail": "경사가 있는 다른 출입구가 있다면 그 위치를 안내합니다.", "difficulty": 1, "timing": 1 },
+      { "id": "stairs_portable_ramp", "title": "이동식 경사로 설치", "detail": "계단 위에 걸치는 이동식 경사로를 준비해 필요 시 설치합니다.", "difficulty": 3, "timing": 2 },
+      { "id": "stairs_lift", "title": "경사로 또는 리프트 설치", "detail": "계단 옆에 영구 경사로나 휠체어 리프트를 설치합니다.", "difficulty": 5, "timing": 5 }
+    ],
+    "blocked_path": [
+      { "id": "path_rearrange", "title": "통로 폭 확보를 위한 비품 재배치", "detail": "통로를 좁히는 비품을 옆으로 옮겨 지나갈 폭을 확보합니다.", "difficulty": 1, "timing": 1 },
+      { "id": "path_min_width", "title": "통로 최소 폭 확보 정비", "detail": "고정 구조물을 조정해 최소 통행 폭(약 90cm)을 확보합니다.", "difficulty": 3, "timing": 3 }
+    ],
+    "obstruction": [
+      { "id": "obstruction_move_now", "title": "적치물 즉시 이동", "detail": "통로를 막은 물건을 지금 바로 다른 곳으로 옮깁니다.", "difficulty": 1, "timing": 1 },
+      { "id": "obstruction_no_stack_zone", "title": "상시 적치 금지 구역 지정·표시", "detail": "해당 통로를 적치 금지 구역으로 정하고 바닥에 표시합니다.", "difficulty": 2, "timing": 2 }
+    ],
+    "heavy_door": [
+      { "id": "door_help_notice", "title": "개폐 도움 요청 안내 부착", "detail": "도움이 필요하면 부를 수 있도록 담당자·연락 방법을 문 옆에 안내합니다.", "difficulty": 1, "timing": 1 },
+      { "id": "door_closer_adjust", "title": "문 여닫힘 보조 조정", "detail": "도어 클로저 장력을 조정해 여닫는 힘을 줄입니다.", "difficulty": 2, "timing": 2 },
+      { "id": "door_auto", "title": "자동문 설치", "detail": "센서식 자동문으로 교체합니다.", "difficulty": 5, "timing": 5 }
+    ],
+    "no_signage": [
+      { "id": "signage_direction", "title": "접근 가능 출입구 방향 안내판 부착", "detail": "완만한 출입구 위치를 가리키는 안내판을 눈에 띄는 곳에 붙입니다.", "difficulty": 1, "timing": 1 },
+      { "id": "signage_map", "title": "홈페이지·안내도에 접근 경로 표시", "detail": "시설 안내도와 홈페이지에 접근 가능한 경로를 표시합니다.", "difficulty": 2, "timing": 3 }
+    ]
+  },
+  "receivers": {
+    "school_office": {
+      "label": "학교 행정실 / 담당 교사",
+      "tone": "정중하되 학생이 학교에 건의하는 실무적 어조. 개선이 학생·방문객 모두에게 도움이 된다는 점을 담는다.",
+      "isComplaintTarget": true,
+      "guidance": [
+        "행정실 또는 담당 선생님을 직접 방문해 전달",
+        "학교 홈페이지 건의 게시판에 게시",
+        "학생회를 통해 안건으로 상정"
+      ],
+      "note": ""
+    },
+    "event_team": {
+      "label": "행사 운영팀 / 학생회",
+      "tone": "함께 행사를 준비하는 동료에게 제안하는 협력적 어조.",
+      "isComplaintTarget": true,
+      "guidance": [
+        "행사 준비 회의 안건으로 제출",
+        "운영 담당자에게 직접 전달"
+      ],
+      "note": ""
+    },
+    "public_facility": {
+      "label": "공공시설 (구청·주민센터 관할)",
+      "tone": "관할 기관에 개선을 요청하는 공적이고 간결한 어조.",
+      "isComplaintTarget": true,
+      "guidance": [
+        "국민신문고에 민원 접수",
+        "관할 지자체(구청·주민센터) 민원 창구에 접수"
+      ],
+      "links": [
+        { "label": "국민신문고", "url": "https://www.epeople.go.kr" }
+      ],
+      "note": ""
+    },
+    "private_facility": {
+      "label": "민간 시설 (카페·상가 등)",
+      "tone": "시설 관리자에게 정중히 개선을 부탁하는 어조. 강제가 아닌 요청.",
+      "isComplaintTarget": false,
+      "guidance": [
+        "시설 관리자·점주에게 직접 전달"
+      ],
+      "note": "민간 시설의 접근성 개선은 민원 접수 대상이 아닙니다. 국민신문고 등에 접수해도 처리되지 않으며, 관리자에게 직접 전달하는 것이 전달할 수 있는 유일한 경로입니다."
+    }
+  },
+  "fieldCheckItems": [
+    "휠체어·유모차가 지나갈 수 있는 최소 폭(약 90cm)이 통로 전체에서 확보되는지",
+    "출입문을 한 손으로 여닫을 수 있는지",
+    "바닥이 미끄럽거나 턱이 숨어 있지는 않은지",
+    "접근 가능한 출입구를 알려주는 안내가 눈에 띄는 곳에 있는지"
+  ],
+  "positiveObservations": [
+    "출입구에 별도의 단차 없이 바닥이 이어져 있습니다",
+    "통로에 지나갈 공간이 확보되어 있습니다",
+    "계단 외의 진입 경로가 함께 보입니다"
+  ]
+}
