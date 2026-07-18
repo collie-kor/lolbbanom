@@ -135,7 +135,19 @@ function bindUpload() {
     handleFile(e.dataTransfer.files[0], refresh);
   });
 
+  $("#removePhotoBtn").addEventListener("click", () => clearPhoto(refresh));
   analyzeBtn.addEventListener("click", runAnalyze);
+}
+
+// 첨부한 사진 삭제 → 처음(드롭존) 상태로 되돌림
+function clearPhoto(refresh) {
+  state.imageBase64 = null;
+  state.mimeType = null;
+  $("#fileInput").value = ""; // 같은 파일 재선택 시에도 change 이벤트가 다시 발생하도록
+  $("#previewImg").src = "";
+  $("#previewWrap").classList.add("hidden");
+  $("#dropZone").classList.remove("hidden");
+  if (refresh) refresh();
 }
 
 function handleFile(file, refresh) {
