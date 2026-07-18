@@ -10,7 +10,17 @@
   <!-- ── 상단 내비게이션 ── -->
   <header class="topbar">
     <div class="topbar-inner">
-      <a class="brand" href="#" id="homeLink"><span class="brand-mark"></span>먼저봄</a>
+      <!-- BrandLogo: 실제 로고 이미지 준비 시 아래 .brand-symbol 내부의 <svg>만
+           <img src="..." alt="먼저봄">로 교체하면 됩니다. 텍스트(먼저봄·보조문구)는 HTML 유지. -->
+      <a class="brand" href="#" id="homeLink" aria-label="먼저봄 홈 — 교통약자 접근성 점검 서비스">
+        <span class="brand-symbol" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.75 2C18.9926 2 20 3.00736 20 4.25V19.75C20 20.9926 18.9926 22 17.75 22H6.25C5.00736 22 4 20.9926 4 19.75V4.25C4 3.00736 5.00736 2 6.25 2H17.75ZM8.5 10.25C7.67157 10.25 7 10.9216 7 11.75C7 12.5784 7.67157 13.25 8.5 13.25C9.32843 13.25 10 12.5784 10 11.75C10 10.9216 9.32843 10.25 8.5 10.25Z"/></svg>
+        </span>
+        <span class="brand-text">
+          <span class="brand-name">먼저봄</span>
+          <span class="brand-sub">교통약자 접근성 점검 서비스</span>
+        </span>
+      </a>
       <nav class="topnav" aria-label="주요 메뉴">
         <a class="navlink" href="#features">서비스 소개</a>
         <a class="navlink" href="#how">작동 방식</a>

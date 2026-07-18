@@ -40,7 +40,7 @@ a { color: inherit; }
 .topbar-inner {
   max-width: var(--wide);
   margin: 0 auto;
-  padding: 12px 20px;
+  padding: 9px 20px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -49,19 +49,36 @@ a { color: inherit; }
 .brand {
   display: inline-flex;
   align-items: center;
-  gap: 9px;
-  font-size: 20px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
+  gap: 11px;
   color: #fff;
   text-decoration: none;
 }
-.brand-mark {
-  width: 12px;
-  height: 12px;
-  border-radius: 3px;
+.brand:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
+  border-radius: 8px;
+}
+/* 로고 심볼 (빨간 둥근 사각형 + 흰색 문 아이콘) */
+.brand-symbol {
+  flex: none;
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
   background: var(--accent);
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+.brand-symbol svg { width: 24px; height: 24px; display: block; }
+/* 텍스트 2줄 */
+.brand-text { display: flex; flex-direction: column; justify-content: center; line-height: 1.15; }
+.brand-name { font-size: 21px; font-weight: 800; letter-spacing: -0.02em; }
+.brand-sub {
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: rgba(255, 255, 255, 0.8);
 }
 .topnav { display: flex; align-items: center; gap: 24px; }
 .topnav .navlink {
@@ -237,7 +254,7 @@ a { color: inherit; }
 .footer-inner .fbrand { font-weight: 800; color: var(--ink); font-size: 15px; }
 
 /* ── 진행 표시 (점검 흐름) ── */
-.steps { background: var(--surface); border-bottom: 1px solid var(--line); position: sticky; top: 55px; z-index: 20; }
+.steps { background: var(--surface); border-bottom: 1px solid var(--line); position: sticky; top: 60px; z-index: 20; }
 .steps-inner {
   max-width: var(--maxw);
   margin: 0 auto;
@@ -593,5 +610,7 @@ textarea { min-height: 200px; line-height: 1.65; resize: vertical; }
   .ccol { border-right: none; border-bottom: 1px solid var(--line); }
   .ccol:last-child { border-bottom: none; }
   h2.title { font-size: 22px; }
-  .steps { top: 53px; }
+  .steps { top: 60px; }
+  .brand-sub { display: none; }        /* 모바일: 공간 부족 시 보조 문구만 숨김 */
+  .brand-name { font-size: 20px; }
 }
