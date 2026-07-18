@@ -148,6 +148,7 @@ a { color: inherit; }
 }
 
 /* ── 랜딩 섹션 공통 ── */
+#features, #how, #diff { scroll-margin-top: 64px; }
 .section { max-width: var(--wide); margin: 0 auto; padding: 72px 20px; }
 .band { background: var(--panel); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
 .section-head { text-align: center; max-width: 640px; margin: 0 auto 44px; }

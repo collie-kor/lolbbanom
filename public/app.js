@@ -55,6 +55,18 @@ function bindHome() {
     $(sel).addEventListener("click", goPhoto)
   );
   $("#startManualBtn").addEventListener("click", startManual);
+
+  // 네비 링크(서비스 소개·작동 방식·왜 다른가): 어느 화면에서든 홈으로 돌아가 해당 섹션으로 스크롤
+  document.querySelectorAll(".topnav .navlink").forEach((a) => {
+    a.addEventListener("click", (e) => {
+      e.preventDefault();
+      const target = document.getElementById(a.getAttribute("href").slice(1));
+      show("screen-home");
+      if (target) {
+        requestAnimationFrame(() => target.scrollIntoView({ behavior: "smooth", block: "start" }));
+      }
+    });
+  });
 }
 
 // '사진 없이 직접 점검' — 사진 단계를 건너뛰고 항목을 직접 선택
