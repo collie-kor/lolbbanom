@@ -257,7 +257,9 @@ function renderVerify(topNote) {
   const aiIds =
     state.verifyMode === "manual" ? AI_OBSTACLES : Object.keys(state.reasons);
 
-  if (state.verifyMode === "manual") {
+  // 수동 전환 안내는 '진짜 폴백'(키 없음·분석 실패)이나 '사진 없이 직접 점검'일 때만.
+  // sceneRecognized === false(분석은 됐으나 장면 불명확)일 때는 topNote로 이미 안내하므로 중복 표시하지 않는다.
+  if (state.verifyMode === "manual" && !topNote) {
     wrap.appendChild(
       el(
         "div",
