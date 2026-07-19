@@ -14,7 +14,10 @@ const state = {
   manualEntry: false, // 홈에서 '사진 없이 직접 점검'으로 진입했는지
   items: {}, // obstacleId -> 'yes' | 'no' | 'maybe' | undefined
   reasons: {}, // obstacleId -> AI 관찰 문장
-  confirmed: [], // 확인된 obstacleId 목록
+  confirmed: [], // 확인된 규칙표 obstacleId 목록
+  customs: [], // 커스텀 항목 [{ key, label, reason, source:'ai'|'user', status }]
+  confirmedCustoms: [], // 확인된 커스텀 항목
+  customSeq: 0, // 커스텀 key 생성용
   letter: null,
 };
 
@@ -199,6 +202,7 @@ async function runAnalyze() {
 
   state.items = {};
   state.reasons = {};
+  state.customs = [];
   state.manualEntry = false;
 
   if (!result.ok && result.fallback) {
@@ -224,6 +228,18 @@ async function runAnalyze() {
   (result.candidates || []).forEach((c) => {
     state.items[c.id] = undefined;
     state.reasons[c.id] = c.reason;
+  });
+  // AI가 4개 카테고리 밖에서 발견한 항목 → 커스텀(확인 필요)
+  (result.extra || []).forEach((e) => {
+    if (e && e.label) {
+      state.customs.push({
+        key: "c" + ++state.customSeq,
+        label: e.label,
+        reason: e.reason || "",
+        source: "ai",
+        status: undefined,
+      });
+    }
   });
   renderVerify();
   show("screen-verify");
@@ -284,6 +300,90 @@ function renderVerify(topNote) {
     item.appendChild(buildChoices(id, true));
     uc.appendChild(item);
   });
+
+  renderCustomList();
+  bindCustomAdd();
+}
+
+// 커스텀 항목(AI 자유 발견 + 사용자 직접입력) 렌더
+function renderCustomList() {
+  const wrap = $("#customList");
+  wrap.innerHTML = "";
+  state.customs.forEach((c) => {
+    const item = el("div", "verify-item custom");
+    const head = el("div", "custom-head");
+    const label = el("div", "vlabel", esc(c.label));
+    head.appendChild(label);
+    if (c.source === "ai") {
+      head.appendChild(el("span", "custom-badge", "AI 발견"));
+    } else {
+      head.appendChild(el("span", "custom-badge user", "직접 입력"));
+    }
+    item.appendChild(head);
+    if (c.reason) item.appendChild(el("div", "vreason", esc(c.reason)));
+
+    if (c.source === "ai") {
+      // AI가 찾은 항목 → 확인 필요 (맞아요/아니에요/모르겠어요)
+      item.appendChild(buildCustomChoices(c));
+    } else {
+      // 사용자가 추가한 항목 → 이미 확정, 삭제만 가능
+      const removeRow = el("div", "custom-actions");
+      const rm = el("button", "btn btn-ghost btn-sm", "삭제");
+      rm.addEventListener("click", () => {
+        state.customs = state.customs.filter((x) => x.key !== c.key);
+        renderCustomList();
+      });
+      removeRow.appendChild(rm);
+      item.appendChild(removeRow);
+    }
+    wrap.appendChild(item);
+  });
+}
+
+function buildCustomChoices(custom) {
+  const row = el("div", "choices");
+  [
+    ["yes", "맞아요"],
+    ["no", "아니에요"],
+    ["maybe", "모르겠어요"],
+  ].forEach(([val, label]) => {
+    const b = el("button", "choice" + (custom.status === val ? " sel-" + val : ""), esc(label));
+    b.addEventListener("click", () => {
+      custom.status = val;
+      row.querySelectorAll(".choice").forEach((c) => c.classList.remove("sel-yes", "sel-no", "sel-maybe"));
+      b.classList.add("sel-" + val);
+    });
+    row.appendChild(b);
+  });
+  return row;
+}
+
+// '직접 추가' 버튼 바인딩 (renderVerify 시 1회만)
+let customAddBound = false;
+function bindCustomAdd() {
+  if (customAddBound) return;
+  customAddBound = true;
+  const input = $("#customInput");
+  const add = () => {
+    const text = input.value.trim();
+    if (!text) return;
+    state.customs.push({
+      key: "c" + ++state.customSeq,
+      label: text.slice(0, 60),
+      reason: "",
+      source: "user",
+      status: "yes",
+    });
+    input.value = "";
+    renderCustomList();
+  };
+  $("#customAddBtn").addEventListener("click", add);
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      add();
+    }
+  });
 }
 
 function buildChoices(id, isUserCheck) {
@@ -340,7 +440,8 @@ function bindNav() {
 
 function goToCompareOrNone() {
   state.confirmed = Object.keys(state.items).filter((id) => state.items[id] === "yes");
-  if (state.confirmed.length === 0) {
+  state.confirmedCustoms = state.customs.filter((c) => c.status === "yes");
+  if (state.confirmed.length === 0 && state.confirmedCustoms.length === 0) {
     renderNone();
     show("screen-none");
   } else {
@@ -363,6 +464,29 @@ function renderNone() {
 
 // ── 3단계: 이용자별 비교 (시그니처) ───────────────────────
 function renderCompare() {
+  // 규칙표 기반 비교는 확인된 규칙 장애물이 있을 때만 표시
+  $("#ruleCompareSection").classList.toggle("hidden", state.confirmed.length === 0);
+
+  // 커스텀(직접 확인·입력) 항목 섹션
+  const customSec = $("#customCompareSection");
+  const customBody = $("#customCompareBody");
+  customBody.innerHTML = "";
+  customSec.classList.toggle("hidden", state.confirmedCustoms.length === 0);
+  state.confirmedCustoms.forEach((c) => {
+    const block = el("div", "compare-block");
+    const name = el("div", "obstacle-name");
+    name.appendChild(document.createTextNode(c.label));
+    name.appendChild(el("span", "custom-badge" + (c.source === "user" ? " user" : ""), c.source === "ai" ? "AI 발견" : "직접 입력"));
+    block.appendChild(name);
+    block.appendChild(el("div", "custom-compare-note", esc(c.reason || "요청문에 이 내용을 담아 개선을 요청할 수 있습니다.")));
+    customBody.appendChild(block);
+  });
+
+  if (state.confirmed.length === 0) {
+    renderImprovements();
+    return;
+  }
+
   const head = $("#compareHead");
   head.innerHTML = "";
   USER_ORDER.forEach((uid) => {
@@ -435,40 +559,61 @@ function renderLetterSetup() {
     sel.appendChild(opt);
   });
 
-  // 개선안 선택지: 확인된 장애물별 상위 개선안
+  // 개선안 선택지: 확인된 장애물별 상위 개선안 + 커스텀 항목
   const choices = $("#improvementChoices");
   choices.innerHTML = "";
-  let first = true;
+  const state_first = { v: true };
+
+  const addRadio = (value, labelText, subText, isCustom) => {
+    const wrap = el("div", "radio-item" + (state_first.v ? " sel" : ""));
+    const input = el("input");
+    input.type = "radio";
+    input.name = "improvement";
+    input.value = value;
+    input.checked = state_first.v;
+    input.dataset.custom = isCustom ? "1" : "";
+    input.addEventListener("change", () => {
+      choices.querySelectorAll(".radio-item").forEach((r) => r.classList.remove("sel"));
+      wrap.classList.add("sel");
+      $("#customImproveWrap").classList.toggle("hidden", input.dataset.custom !== "1");
+    });
+    const label = el("div");
+    label.appendChild(el("div", "r-label", labelText));
+    if (subText) label.appendChild(el("div", "r-sub", subText));
+    wrap.appendChild(input);
+    wrap.appendChild(label);
+    wrap.addEventListener("click", (e) => {
+      if (e.target !== input) input.click();
+    });
+    choices.appendChild(wrap);
+    state_first.v = false;
+  };
+
   state.confirmed.forEach((oid) => {
     selectImprovements(oid).forEach((imp, i) => {
-      const wrap = el("div", "radio-item" + (first ? " sel" : ""));
-      const input = el("input");
-      input.type = "radio";
-      input.name = "improvement";
-      input.value = `${oid}::${imp.id}`;
-      input.checked = first;
-      input.addEventListener("change", () => {
-        choices.querySelectorAll(".radio-item").forEach((r) => r.classList.remove("sel"));
-        wrap.classList.add("sel");
-      });
-      const label = el("div");
-      label.appendChild(
-        el(
-          "div",
-          "r-label",
-          `${esc(state.rules.obstacles[oid].label)} · ${esc(imp.title)}${i === 0 ? " (1순위)" : ""}`
-        )
+      addRadio(
+        `${oid}::${imp.id}`,
+        `${esc(state.rules.obstacles[oid].label)} · ${esc(imp.title)}${i === 0 ? " (1순위)" : ""}`,
+        esc(imp.detail),
+        false
       );
-      label.appendChild(el("div", "r-sub", esc(imp.detail)));
-      wrap.appendChild(input);
-      wrap.appendChild(label);
-      wrap.addEventListener("click", (e) => {
-        if (e.target !== input) input.click();
-      });
-      choices.appendChild(wrap);
-      first = false;
     });
   });
+
+  // 커스텀(직접 확인·입력) 항목: 요청할 개선 내용을 직접 적어 요청
+  state.confirmedCustoms.forEach((c) => {
+    addRadio(
+      `custom::${c.key}`,
+      `${esc(c.label)} · 개선 요청`,
+      esc(c.reason || "현장 확인과 개선을 요청합니다."),
+      true
+    );
+  });
+
+  // 첫 선택지가 커스텀인 경우(규칙 항목이 하나도 없을 때) 개선내용 입력칸 노출
+  const firstChecked = choices.querySelector('input[name="improvement"]:checked');
+  $("#customImproveWrap").classList.toggle("hidden", !(firstChecked && firstChecked.dataset.custom === "1"));
+  $("#customImproveInput").value = "";
 
   $("#letterResult").classList.add("hidden");
 }
@@ -477,8 +622,6 @@ async function generateLetter() {
   const receiverId = $("#receiverSelect").value;
   const picked = document.querySelector('input[name="improvement"]:checked');
   if (!picked) return;
-  const [obstacleId, impId] = picked.value.split("::");
-  const improvement = (state.rules.improvements[obstacleId] || []).find((x) => x.id === impId);
 
   const location = {
     address: $("#addressInput").value.trim(),
@@ -487,11 +630,29 @@ async function generateLetter() {
   // 위치 미입력 시 경고 (요청문 생성은 계속 가능)
   $("#noLocationWarn").classList.toggle("hidden", Boolean(location.address || location.detail));
 
-  // 이 장애물에 부담이 있는 이용자만
-  const userIds = USER_ORDER.filter((uid) => {
-    const cell = state.rules.matrix[`${obstacleId}_${uid}`];
-    return cell && cell.applicable;
-  });
+  // 규칙표 항목 / 커스텀 항목에 따라 요청 페이로드 구성
+  let payload;
+  if (picked.dataset.custom === "1") {
+    const key = picked.value.slice("custom::".length);
+    const c = state.customs.find((x) => x.key === key);
+    const detailText = $("#customImproveInput").value.trim() || "해당 문제의 현장 확인과 개선을 요청드립니다.";
+    payload = {
+      receiverId,
+      obstacleLabel: c ? c.label : "",
+      obstacleReason: c ? c.reason : "",
+      userIds: [],
+      improvement: { title: "개선 요청", detail: detailText },
+      location,
+    };
+  } else {
+    const [obstacleId, impId] = picked.value.split("::");
+    const improvement = (state.rules.improvements[obstacleId] || []).find((x) => x.id === impId);
+    const userIds = USER_ORDER.filter((uid) => {
+      const cell = state.rules.matrix[`${obstacleId}_${uid}`];
+      return cell && cell.applicable;
+    });
+    payload = { receiverId, obstacleId, userIds, improvement, location };
+  }
 
   $("#letterResult").classList.remove("hidden");
   $("#letterText").value = "요청문 초안을 작성하는 중입니다…";
@@ -502,7 +663,7 @@ async function generateLetter() {
     result = await fetch("/api/compose", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ receiverId, obstacleId, userIds, improvement, location }),
+      body: JSON.stringify(payload),
     }).then((r) => r.json());
   } catch {
     result = { ok: false, text: "요청문 생성에 실패했습니다. 잠시 후 다시 시도해 주세요." };
@@ -563,8 +724,13 @@ function resetCheck() {
   state.items = {};
   state.reasons = {};
   state.confirmed = [];
+  state.customs = [];
+  state.confirmedCustoms = [];
   state.verifyMode = "ai";
   state.manualEntry = false;
+  $("#customInput") && ($("#customInput").value = "");
+  $("#customImproveInput") && ($("#customImproveInput").value = "");
+  $("#customImproveWrap") && $("#customImproveWrap").classList.add("hidden");
   $("#fileInput").value = "";
   $("#previewWrap").classList.add("hidden");
   $("#dropZone").classList.remove("hidden");

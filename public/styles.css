@@ -441,6 +441,28 @@ button { font-family: inherit; letter-spacing: -0.01em; cursor: pointer; }
 .choice.sel-no { background: var(--panel); border-color: var(--ink-soft); color: var(--ink-soft); text-decoration: line-through; }
 .choice.sel-maybe { background: #fff7ed; border-color: var(--flag); color: var(--flag); }
 
+/* 커스텀 항목 (AI 자유 발견 + 직접 입력) */
+.verify-item.custom { border-left: 3px solid var(--accent); }
+.custom-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.custom-badge {
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--accent);
+  border-radius: 999px;
+  padding: 2px 9px;
+  letter-spacing: -0.01em;
+}
+.custom-badge.user { background: var(--ink-soft); }
+.custom-actions { margin-top: 10px; }
+.customadd { margin-top: 4px; }
+.customadd-label { display: block; font-size: 13px; font-weight: 700; color: var(--ink-soft); margin-bottom: 8px; }
+.customadd-row { display: flex; gap: 8px; }
+.customadd-row input { flex: 1; }
+.customadd-row .btn { flex: none; }
+.compare-block .obstacle-name { display: flex; align-items: center; gap: 8px; }
+.custom-compare-note { padding: 14px; color: var(--ink-soft); font-size: 14px; line-height: 1.55; }
+
 .notice {
   font-size: 13px;
   color: var(--ink-soft);
